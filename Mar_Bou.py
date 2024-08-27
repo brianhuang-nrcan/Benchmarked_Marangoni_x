@@ -12,7 +12,7 @@ from fenics import (
 from tqdm import tqdm
 from mpi4py import MPI
 
-set_log_level(LogLevel.ERROR)
+set_log_level(LogLevel.INFO)
 
 
 ########################## Tracking Information Functions and Dimenssionless Numbers ##################
@@ -510,7 +510,7 @@ write_simulation_data( upT0, T, file , variable_names=variable_names )
 
 
 # Time-stepping loop
-for it in tqdm(range(200000)):
+for it in tqdm(range(1000)):
 
 
 

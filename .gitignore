@@ -1,2 +1,4 @@
 *.xdmf
 *.h5
+temp*.py
+test*.py
