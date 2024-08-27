@@ -2,11 +2,11 @@ import fenics as fe
 import dolfin as df
 import numpy as np
 from fenics import (
-    UserExpression, Constant, FunctionSpace, TestFunctions, 
-    Function, MixedElement, RectangleMesh, MeshFunction, 
-    cells, refine, Measure, SubDomain, VectorElement, 
-    FiniteElement, derivative, NonlinearVariationalProblem, 
-    NonlinearVariationalSolver, Point, DirichletBC, split, 
+    UserExpression, Constant, FunctionSpace, TestFunctions,
+    Function, MixedElement, RectangleMesh, MeshFunction,
+    cells, refine, Measure, SubDomain, VectorElement,
+    FiniteElement, derivative, NonlinearVariationalProblem,
+    NonlinearVariationalSolver, Point, DirichletBC, split,
     near, TrialFunction, LogLevel, set_log_level, sqrt, VectorFunctionSpace, interpolate
 )
 from tqdm import tqdm
@@ -43,7 +43,7 @@ def calculate_dimensionless_numbers(u_max, domain_length_x, K1, RHO1, MU1):
     return peclet_number, reynolds_number
 
 
-def write_to_file(line_points , velocity_values ): 
+def write_to_file(line_points , velocity_values ):
 
     gathered_line_points = comm.gather(line_points, root=0)
     gathered_velocity_values = comm.gather(velocity_values, root=0)
@@ -58,7 +58,7 @@ def write_to_file(line_points , velocity_values ):
         np.save('all_velocity_values.npy', all_velocity_values)
 
 
-    return 
+    return
 
 
 
@@ -81,7 +81,7 @@ size = comm.Get_size()
 
 
 ##################### Physical Constants ################################
-    
+
 GRAVITY = -10  # Acceleration due to gravity (m/s^2)
 RHO1 = 760  # Fluid density (kg/m^3)
 MU1 = 4.94 * 10 ** -4  # Dynamic viscosity (Pa.s)
@@ -104,7 +104,7 @@ def refine_mesh_near_boundary(mesh, threshold, domain):
 
     # Unpack domain coordinates
     (X0, Y0), (X1, Y1) = domain
-    
+
     # Initialize a MeshFunction for marking cells to refine
     marker = MeshFunction("bool", mesh, mesh.topology().dim(), False)
 
@@ -131,10 +131,10 @@ def refine_mesh_near_boundary(mesh, threshold, domain):
 
 def refine_mesh_near_corners(mesh, threshold, domain):
 
-    
+
     # Unpack domain coordinates
     (X0, Y0), (X1, Y1) = domain
-    
+
     # Initialize a MeshFunction for marking cells to refine
     marker = MeshFunction("bool", mesh, mesh.topology().dim(), False)
 
@@ -195,7 +195,7 @@ top_right_corner = df.Point(origin.x() + domain_length_x, origin.y() + domain_le
 # Create the initial rectangular mesh using the defined corners and number of divisions
 initial_mesh = fe.RectangleMesh(origin, top_right_corner, num_divisions_x, num_divisions_y)
 
-# Define Domain 
+# Define Domain
 
 Domain = [ ( 0.0 , 0.0 ) ,( 0.0 + domain_length_x , 0.0 + domain_length_y ) ]
 
@@ -222,7 +222,7 @@ def create_function_spaces(mesh):
 
     # Define finite elements for velocity, pressure, and temperature
     P2 = fe.VectorElement("Lagrange", mesh.ufl_cell(), 2)  # Velocity
-    P1 = fe.FiniteElement("Lagrange", mesh.ufl_cell(), 1)  # Pressure 
+    P1 = fe.FiniteElement("Lagrange", mesh.ufl_cell(), 1)  # Pressure
     PT = fe.FiniteElement( "Lagrange", mesh.ufl_cell(), 1  )#temperature
 
     # Define mixed elements
@@ -253,7 +253,7 @@ def create_function_spaces(mesh):
 ############################ Defining Equations ###########################
 
 # Related Functions for defining equaions
-def epsilon(u):  
+def epsilon(u):
 
     return 0.5 * (fe.grad(u) + fe.grad(u).T)
 
@@ -277,7 +277,7 @@ def F1(u_answer, q_test, dt):
 def F2(u_answer, u_prev, p_answer, T_answer, v_test, dt, rho1, n_v, mu1, gamma, alpha1, ds1, dx1):
 
     global GRAVITY, T_REF
-    
+
     F2 = (
         fe.inner((u_answer - u_prev) / dt, v_test) * fe.dx
         + fe.inner(fe.dot(u_answer, fe.grad(u_answer)), v_test) * fe.dx
@@ -302,7 +302,7 @@ def F3(T_answer, T_prev, u_answer, s_test, dt, rho1, Cp1, K1):
 
 
 def solve_navier_stokes_heat_transfer(mesh, Bc, dt, upT, W, rho1, mu1, gamma, n_v, alpha1, Cp1, K1, absolute_tolerance, relative_tolerance, u_answer, u_prev, T_answer, T_prev, p_answer, v_test, q_test, s_test, ds1, dx1):
- 
+
 
     # Define weak forms
     F1_form = F1(u_answer, q_test, dt)
@@ -336,7 +336,7 @@ def solve_navier_stokes_heat_transfer(mesh, Bc, dt, upT, W, rho1, mu1, gamma, n_
 
 ############################ Boundary Condition Section #################
 
-def Define_Boundary_Condition(W, Domain, T_LEFT, T_RIGHT  ) : 
+def Define_Boundary_Condition(W, Domain, T_LEFT, T_RIGHT  ) :
     # Define the Domain boundaries based on the previous setup
     (X0, Y0), (X1, Y1) = Domain
 
@@ -452,10 +452,10 @@ class InitialConditions(fe.UserExpression):
         values[3] = 273.15  # Initial temperature (in Kelvin)
 
     def value_shape(self):
- 
+
         return (4,)
 
-initial_v  = InitialConditions( degree = 2 ) 
+initial_v  = InitialConditions( degree = 2 )
 
 upT.interpolate( initial_v )
 upT0.interpolate( initial_v )
@@ -471,7 +471,7 @@ file = fe.XDMFFile("Mar_Bou.xdmf" ) # File Name To Save #
 def write_simulation_data(Sol_Func, time, file, variable_names ):
 
 
-    
+
     # Configure file parameters
     file.parameters["rewrite_function_mesh"] = True
     file.parameters["flush_output"] = True
@@ -536,7 +536,7 @@ for it in tqdm(range(1000)):
 
     u_max, u_min = compute_global_velocity_extremes(upT, W, comm)
     peclet_number, reynolds_number = calculate_dimensionless_numbers(u_max, domain_length_x, K1, RHO1, MU1)
-    
+
     if rank == 0 and it% 1000 ==0  :  # Only print for the root process
 
         print(" ├─ Iteration: " + str(it), flush=True)
